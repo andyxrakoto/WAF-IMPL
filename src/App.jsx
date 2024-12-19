@@ -74,10 +74,10 @@ function App() {
           <p key={index}>{line}</p>
         ))}
       </div>
-      <script
-        type="text/javascript"
-        src="https://b82b1763d1c3.ef7ef6cc.eu-west-3.captcha.awswaf.com/b82b1763d1c3/jsapi.js"
-      ></script>
+      <script 
+      type="text/javascript" 
+      src="https://b82b1763d1c3.eu-west-3.captcha-sdk.awswaf.com/b82b1763d1c3/jsapi.js" 
+      defer></script>
     </div>
   );
 }
