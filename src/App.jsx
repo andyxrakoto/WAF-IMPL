@@ -1,53 +1,62 @@
-import React, { useState } from "react";
+import { useState } from 'react';
+import './App.css';
 
 function App() {
-  const [number, setNumber] = useState("");
-  const [sequence, setSequence] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [number, setNumber] = useState('');
+  const [output, setOutput] = useState([]);
+  const [isFormVisible, setIsFormVisible] = useState(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const N = parseInt(number, 10);
-    if (N < 1 || N > 1000) {
-      alert("Veuillez entrer un nombre entre 1 et 1000.");
+    const n = parseInt(number, 10);
+    if (n < 1 || n > 1000) {
+      alert('Please enter a number between 1 and 1000.');
       return;
     }
 
-    setLoading(true);
-    setSequence([]);
-    for (let i = 1; i <= N; i++) {
+    setOutput([]);
+    setIsFormVisible(false); // Hide form
+
+    for (let i = 1; i <= n; i++) {
       try {
-        const response = await fetch("https://api.prod.jcloudify.com/whoami");
+        const response = await fetch('https://api.prod.jcloudify.com/whoami');
         if (response.status === 200) {
-          setSequence((prev) => [...prev, `${i}. Forbidden`]);
+          const text = await response.text();
+          setOutput((prev) => [...prev, `${i}. ${text}`]);
         } else if (response.status === 403) {
-          alert(`Captcha requis à l'étape ${i}. Veuillez le résoudre.`);
-          await handleCaptcha();
-          i--; // Réessayer après le captcha
+          await handleCaptcha(i);
+        } else {
+          setOutput((prev) => [...prev, `${i}. Forbidden`]);
         }
       } catch (error) {
-        console.error(error);
-        setSequence((prev) => [...prev, `${i}. Une erreur est survenue.`]);
+        setOutput((prev) => [...prev, `${i}. Network Error`]);
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Pause de 1 seconde
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    setLoading(false);
+
+    setIsFormVisible(true);
   };
 
-  const handleCaptcha = async () => {
-    alert("Résolvez le captcha pour continuer.");
-    // Attendez que l'utilisateur résolve le captcha
+  const handleCaptcha = async (attempt) => {
+    return new Promise((resolve) => {
+      setOutput((prev) => [
+        ...prev,
+        '${attempt}. CAPTCHA required, please solve it...,'
+      ]);
+
+      window.awsWafCaptchaCallback = function () {
+        alert('CAPTCHA solved successfully!');
+        resolve();
+      };
+    });
   };
 
   return (
-    <div>
-      <h1>API Sequence Generator</h1>
-      {loading ? (
-        <p>Génération en cours...</p>
-      ) : (
+    <div className="App">
+      {isFormVisible && (
         <form onSubmit={handleSubmit}>
           <label>
-            Entrez un nombre (1 à 1000) :
+            Enter a number (1-1000):
             <input
               type="number"
               value={number}
@@ -57,17 +66,20 @@ function App() {
               required
             />
           </label>
-          <button type="submit">Générer la séquence</button>
+          <button type="submit">Submit</button>
         </form>
       )}
-      <div>
-        {sequence.map((line, index) => (
+      <div id="output">
+        {output.map((line, index) => (
           <p key={index}>{line}</p>
         ))}
       </div>
+      <script
+        type="text/javascript"
+        src="https://b82b1763d1c3.ef7ef6cc.eu-west-3.captcha.awswaf.com/b82b1763d1c3/jsapi.js"
+      ></script>
     </div>
   );
 }
 
 export default App;
-
